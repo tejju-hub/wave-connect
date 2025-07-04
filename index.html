@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DarkCom - Secure Comms</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @keyframes wave {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        .animate-wave {
+            animation: wave 2s infinite;
+        }
+        
+        .frequency-dial {
+            transition: transform 0.3s ease;
+        }
+        
+        .speaker-animation {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .speaker-animation::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle, rgba(30,64,175,0.2) 0%, transparent 70%);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.4; }
+            50% { transform: scale(1.1); opacity: 0.2; }
+            100% { transform: scale(1); opacity: 0.4; }
+        }
+        
+        .channel-noise {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                #1e3a8a,
+                #1e3a8a 1px,
+                transparent 1px,
+                transparent 3px
+            );
+            opacity: 0.05;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col overflow-x-hidden">
+    <!-- Header with logo and navigation -->
+    <header class="bg-gray-800 py-4 px-6 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/9c536d08-6d1e-424e-9b24-37c89852f04b.png" alt="DarkCom logo - minimalist terminal-style icon" class="w-10 h-10 rounded-full border border-green-500">
+                <h1 class="text-2xl font-mono font-bold text-green-500">DarkCom</h1>
+            </div>
+            <nav>
+                <ul class="flex space-x-6">
+                    <li><a href="#" class="hover:text-green-400 transition font-mono text-sm">CHANNELS</a></li>
+                    <li><a href="#" class="hover:text-green-400 transition font-mono text-sm">NODES</a></li>
+                    <li><a href="#" class="hover:text-green-400 transition font-mono text-sm">LOGS</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-1 container mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left column - Radio tuner -->
+            <div class="bg-gray-800 rounded-xl p-6 shadow-lg relative overflow-hidden">
+                <div class="channel-noise"></div>
+                <h2 class="text-xl font-bold mb-6 flex items-center">
+                    <i class="fas fa-sliders-h mr-2 text-blue-400"></i> Tuner
+                </h2>
+                
+                <div class="flex items-center justify-center mb-8">
+                    <div class="text-center">
+                        <div class="text-5xl font-mono font-bold mb-2 text-green-400" id="current-frequency">CH-01</div>
+                        <div class="text-gray-400 uppercase text-xs tracking-wider font-mono">SECURE CHANNEL</div>
+                    </div>
+                </div>
+                
+                <div class="relative h-32 flex items-center justify-center">
+                    <div class="frequency-dial bg-blue-900 w-48 h-48 rounded-full border-4 border-blue-700 flex items-center justify-center relative z-10">
+                        <div class="w-2 h-16 bg-blue-400 rounded-full absolute top-0 mt-2"></div>
+                        
+                        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+                            <div class="text-sm text-gray-300" id="current-channel-name">Channel 1 <span class="text-red-400 animate-pulse">ACTIVE</span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="absolute left-0 right-0 bottom-0 flex justify-between px-2 text-gray-400 text-xs">
+                        <span>88.0</span>
+                        <span>FM</span>
+                        <span>108.0</span>
+                    </div>
+                </div>
+                
+                <div class="mt-8 grid grid-cols-3 gap-4">
+                    <button id="tune-down" class="bg-blue-800 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition flex items-center justify-center">
+                        <i class="fas fa-chevron-left mr-2"></i> Down
+                    </button>
+                    <button id="tune-up" class="bg-blue-800 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition flex items-center justify-center">
+                        Up <i class="fas fa-chevron-right ml-2"></i>
+                    </button>
+                    <button id="push-to-talk" class="bg-green-800 hover:bg-green-700 text-green-100 py-2 px-4 rounded-lg transition flex items-center justify-center border border-green-600">
+                        <i class="fas fa-microphone mr-2"></i> PUSH-TO-TALK
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Middle column - Now playing and social -->
+            <div class="space-y-6">
+                <!-- Transmission Status -->
+                <div class="bg-gray-800 rounded-xl p-6 shadow-lg">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-broadcast-tower mr-2 text-blue-400"></i> Transmission
+                    </h2>
+                    <div class="flex flex-col items-center justify-center h-40">
+                        <div class="text-center mb-4">
+                            <div class="text-3xl font-mono font-bold text-green-400 mb-1" id="transmit-status">[STANDBY]</div>
+                            <div class="text-gray-400 font-mono text-sm">HOLD TO TRANSMIT</div>
+                        </div>
+                        <div class="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
+                            <div id="signal-meter" class="bg-green-500 h-full w-0 transition-all duration-300"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Friends Listening -->
+                <div class="bg-gray-800 rounded-xl p-6 shadow-lg">
+                    <h2 class="text-xl font-bold mb-4 flex items-center justify-between">
+                        <span class="font-mono text-green-400"><i class="fas fa-terminal mr-2"></i> ACTIVE NODES</span>
+                        <button class="text-sm text-green-400 hover:text-green-300 font-mono">+NODE</button>
+                    </h2>
+                    
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="text-center">
+                            <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/949c4780-dedc-4d00-ab84-3292dd2b2c6f.png" alt="User profile picture of Alex - young male with glasses and smile" class="w-16 h-16 rounded-full mx-auto mb-2 border-2 border-blue-400">
+                            <p class="text-sm font-medium">Alex</p>
+                            <p class="text-xs text-gray-400">100.3 FM</p>
+                        </div>
+                        <div class="text-center">
+                            <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/b90c34d6-e508-4709-9c42-1c3fdb242ff3.png" alt="User profile picture of Maria - woman with curly hair listening to headphones" class="w-16 h-16 rounded-full mx-auto mb-2 border-2 border-blue-400">
+                            <p class="text-sm font-medium">Maria</p>
+                            <p class="text-xs text-gray-400">98.5 FM</p>
+                        </div>
+                        <div class="text-center">
+                            <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/fcd1013c-a73c-4c83-b2ce-fd1c5051b389.png" alt="User profile picture of Jordan - androgynous person with beanie and nose ring" class="w-16 h-16 rounded-full mx-auto mb-2 border-2 border-blue-400">
+                            <p class="text-sm font-medium">Jordan</p>
+                            <p class="text-xs text-gray-400">105.7 FM</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right column - Shows and chat -->
+            <div class="space-y-6">
+                <!-- Upcoming Shows -->
+                <div class="bg-gray-800 rounded-xl p-6 shadow-lg">
+                    <h2 class="text-xl font-bold mb-4 flex items-center justify-between">
+                        <span><i class="fas fa-calendar-alt mr-2 text-blue-400"></i> Upcoming Shows</span>
+                        <button class="text-sm text-blue-400 hover:text-blue-300">View All</button>
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-start border-b border-gray-700 pb-4">
+                            <div class="bg-blue-900 text-blue-300 text-xs font-bold px-2 py-1 rounded mr-3 leading-none">
+                                9PM
+                            </div>
+                            <div>
+                                <h4 class="font-medium">Late Night Jazz</h4>
+                                <p class="text-sm text-gray-400">With DJ Smooth</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start border-b border-gray-700 pb-4">
+                            <div class="bg-blue-900 text-blue-300 text-xs font-bold px-2 py-1 rounded mr-3 leading-none">
+                                10PM
+                            </div>
+                            <div>
+                                <h4 class="font-medium">Indie Discoveries</h4>
+                                <p class="text-sm text-gray-400">New releases weekly</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start border-b border-gray-700 pb-4">
+                            <div class="bg-blue-900 text-blue-300 text-xs font-bold px-2 py-1 rounded mr-3 leading-none">
+                                12AM
+                            </div>
+                            <div>
+                                <h4 class="font-medium">Night Travels</h4>
+                                <p class="text-sm text-gray-400">Ambient electronic</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Chat Box -->
+                <div class="bg-gray-800 rounded-xl shadow-lg">
+                    <div class="border-b border-gray-700 p-4 flex items-center justify-between">
+                        <h2 class="font-bold flex items-center">
+                            <i class="fas fa-comments mr-2 text-blue-400"></i> Channel Chat
+                        </h2>
+                        <div class="flex space-xDecline-2">
+                            <button class="text-gray-400 hover:text-white">
+                                <i class="fas fa-cog"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 h-48 overflow-y-auto">
+                        <div class="space-y-3">
+                            <div class="flex items-start space-x-2">
+                                <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/2919bdce-4498-4f70-ad55-87a92436fe12.png" alt="User avatar of Alex - small profile picture" class="w-6 h-6 rounded-full">
+                                <div class="bg-gray-700 px-3 py-2 rounded-lg max-w-xs">
+                                    <p class="text-sm font-medium">Alex</p>
+                                    <p class="text-sm">Anyone else loving this track?</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-2">
+                                <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/72f9e540-149a-465f-968d-8e2f6e119aeb.png" alt="User avatar of Maria - small profile picture" class="w-6 h-6 rounded-full">
+                                <div class="bg-gray-700 px-3 py-2 rounded-lg max-w-xs">
+                                    <p class="text-sm font-medium">Maria</p>
+                                    <p class="text-sm">Absolute banger 💙</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-2 ml-8">
+                                <div class="bg-blue-600 px-3 py-2 rounded-lg max-w-xs">
+                                    <p class="text-sm font-medium">You</p>
+                                    <p class="text-sm">Just tuned in, sounds amazing!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="border-t border-gray-700 p-3">
+                        <div class="flex items-center">
+                            <input type="text" placeholder="Send a message..." class="bg-gray-700 text-white rounded-l-lg px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <button class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-r-lg text-white transition">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <footer class="bg-gray-800 py-4 px-6 border-t border-gray-700">
+        <div class="container mx-auto">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center space-x-2 mb-4 md:mb-0">
+                    <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/cb7e6b8c-05b4-4131-a5b9-4b7ac27f59c7.png" alt="Small WaveConnect logo - minimal wave icon" class="w-8 h-8 rounded-full">
+                    <span class="font-medium">WaveConnect</span>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-sm text-gray-400 hover:text-white transition">About</a>
+                    <a href="#" class="text-sm text-gray-400 hover:text-white transition">Privacy</a>
+                    <a href="#" class="text-sm text-gray-400 hover:text-white transition">Terms</a>
+                    <a href="#" class="text-sm text-gray-400 hover:text-white transition">Contact</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Radio tuning functionality
+        const channels = [
+            { frequency: '88.3', name: 'Classic Rock', song: 'Sweet Child O\' Mine', artist: 'Guns N\' Roses' },
+            { frequency: '92.1', name: 'Pop Hits', song: 'Don\'t Start Now', artist: 'Dua Lipa' },
+            { frequency: '94.7', name: 'Alternative', song: 'Mr. Brightside', artist: 'The Killers' },
+            { frequency: '98.5', name: 'Smooth Jazz', song: 'Take Five', artist: 'Dave Brubeck' },
+            { frequency: '100.3', name: 'Hip Hop', song: 'Sicko Mode', artist: 'Travis Scott' },
+            { frequency: '103.9', name: 'EDM', song: 'Strobe', artist: 'deadmau5' },
+            { frequency: '105.7', name: 'Indie', song: 'Ho Hey', artist: 'The Lumineers' },
+            { frequency: '107.5', name: 'News/Talk', song: 'News Hour', artist: 'NPR' }
+        ];
+        
+        let currentChannelIndex = 3; // Default to 98.5 FM
+        
+        function updateRadioDisplay() {
+            const channel = channels[currentChannelIndex];
+            document.getElementById('current-frequency').textContent = channel.frequency;
+            document.getElementById('current-channel-name').textContent = channel.name;
+            document.getElementById('current-song').textContent = channel.song;
+            document.getElementById('current-artist').textContent = channel.artist;
+            
+            // Animate the dial
+            const dial = document.querySelector('.frequency-dial');
+            const targetRotation = (currentChannelIndex - 3) * 15;
+            dial.style.transform = `rotate(${targetRotation}deg)`;
+        }
+        
+        document.getElementById('tune-up').addEventListener('click', () => {
+            currentChannelIndex = Math.min(currentChannelIndex + 1, channels.length - 1);
+            updateRadioDisplay();
+        });
+        
+        document.getElementById('tune-down').addEventListener('click', () => {
+            currentChannelIndex = Math.max(currentChannelIndex - 1, 0);
+            updateRadioDisplay();
+        });
+        
+        document.getElementById('connect-chat').addEventListener('click', () => {
+            alert(`Connecting to ${channels[currentChannelIndex].name} chat...`);
+        });
+        
+        // Initialize
+        updateRadioDisplay();
+        
+        // Simulate current time for the player
+        setInterval(() => {
+            const timeElement = document.getElementById('current-time');
+            const [min, sec] = timeElement.textContent.split(':').map(Number);
+            let newSec = sec + 1;
+            let newMin = min;
+            if (newSec >= 60) {
+                newSec = 0;
+                newMin++;
+            }
+            timeElement.textContent = `${newMin}:${newSec.toString().padStart(2, '0')}`;
+        }, 1000);
+    </script>
+</body>
+</html>
